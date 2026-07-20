@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-07-19T00:00:00Z",
+  "tool_version": "0.1.0",
+  "findings": [{"id":"docker.unhealthy_containers","profile":"docker","status":"finding","severity":"warning","evidence":["web"],"explanation":"Containers reporting unhealthy may be unable to serve their intended workload.","remediation":"Inspect container logs and configuration; make changes through your normal deployment workflow."}]
+}

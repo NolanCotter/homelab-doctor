@@ -1,0 +1,23 @@
+.TH HOMELAB-DOCTOR 1 "July 2026" "Homelab Doctor" "User Commands"
+.SH NAME
+homelab-doctor \- read-only Linux diagnostics for self-hosters
+.SH SYNOPSIS
+.B homelab-doctor
+.B check
+[
+.B --profile docker|storage|networking
+] [
+.B --format terminal|json|markdown
+] [
+.B --dry-run
+]
+.br
+.B homelab-doctor bundle --output FILE [--privacy standard|private-ips] [--dry-run]
+.br
+.B homelab-doctor explain CHECK_ID
+.br
+.B homelab-doctor list-checks
+.SH DESCRIPTION
+Runs non-mutating diagnostics. No cleanup, restart, permission change, firewall modification, cloud upload, or public-IP lookup is performed. Permission-limited checks are reported as skipped.
+.SH EXIT STATUS
+0 on successful command completion; 2 for invalid arguments or bundle-write errors.

@@ -1,0 +1,14 @@
+version: 2
+project_name: homelab-doctor
+builds:
+  - main: ./cmd/homelab-doctor
+    binary: homelab-doctor
+    goos: [linux]
+    goarch: [amd64, arm64]
+archives:
+  - formats: [tar.gz]
+    files: [README.md, LICENSE, SECURITY.md]
+checksum:
+  name_template: checksums.txt
+release:
+  draft: true

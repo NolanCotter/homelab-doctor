@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Homelab Doctor report",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "tool_version", "findings"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "tool_version": {"type": "string"},
+    "findings": {"type": "array", "items": {"type": "object", "required": ["id", "profile", "status", "severity", "evidence", "explanation", "remediation"], "properties": {"id": {"type": "string", "pattern": "^[a-z]+(\\.[a-z_]+)+$"}, "profile": {"type": "string"}, "status": {"enum": ["pass", "finding", "skipped"]}, "severity": {"enum": ["info", "warning", "critical"]}, "evidence": {"type": "array", "items": {"type": "string"}}, "explanation": {"type": "string"}, "remediation": {"type": "string"}}}}
+  }
+}
