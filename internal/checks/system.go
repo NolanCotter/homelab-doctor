@@ -17,14 +17,16 @@ func system(ctx context.Context, c Config) []report.Finding {
 	if kerr != nil && oerr != nil {
 		out = append(out, skipped("system", "system.distribution_kernel", "cannot read /proc/version or /etc/os-release"))
 	} else {
-		out = append(out, finding("system", "system.distribution_kernel", report.StatusPass, report.SeverityInfo, []string{firstLine(osrel), firstLine(kernel)}, "Kernel and distribution information establishes diagnostic context.", "Keep your distribution and supported kernel security updates current."))
+		out = append(out, finding("system", "system.distribution_kernel", report.StatusPass, report.SeverityInfo, []string{osReleaseName(osrel), firstLine(kernel)}, "Kernel and distribution information establishes diagnostic context.", "Keep your distribution and supported kernel security updates current."))
 	}
 
 	up, err := readFile(c.path("/proc/uptime"))
 	if err != nil {
 		out = append(out, skipped("system", "system.uptime", err.Error()))
+	} else if fields := strings.Fields(up); len(fields) == 0 {
+		out = append(out, skipped("system", "system.uptime", "empty /proc/uptime"))
 	} else {
-		out = append(out, finding("system", "system.uptime", report.StatusPass, report.SeverityInfo, []string{"uptime seconds: " + strings.Fields(up)[0]}, "Long uptimes are informational; they can help correlate a problem with a deployment or reboot.", "Plan maintenance reboots when kernel updates or service changes require them."))
+		out = append(out, finding("system", "system.uptime", report.StatusPass, report.SeverityInfo, []string{"uptime seconds: " + fields[0]}, "Long uptimes are informational; they can help correlate a problem with a deployment or reboot.", "Plan maintenance reboots when kernel updates or service changes require them."))
 	}
 
 	mem, err := readFile(c.path("/proc/meminfo"))
@@ -77,6 +79,21 @@ func system(ctx context.Context, c Config) []report.Finding {
 		out = append(out, finding("system", "system.clock_synchronization", status, sev, []string{"NTPSynchronized=" + strings.TrimSpace(clock.Stdout)}, "Accurate time matters for TLS, logs, backups, and clustered services.", "Verify the configured time service and its upstream reachability."))
 	}
 	return out
+}
+
+func osReleaseName(s string) string {
+	for _, key := range []string{"PRETTY_NAME", "NAME"} {
+		for _, line := range strings.Split(s, "\n") {
+			k, v, ok := strings.Cut(strings.TrimSpace(line), "=")
+			if ok && k == key {
+				v = strings.Trim(strings.TrimSpace(v), `"'`)
+				if v != "" {
+					return v
+				}
+			}
+		}
+	}
+	return "distribution unavailable"
 }
 
 func memKB(s, key string) int64 {

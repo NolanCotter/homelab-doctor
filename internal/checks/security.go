@@ -31,8 +31,9 @@ func security(ctx context.Context, c Config) []report.Finding {
 		roots = []string{"."}
 	}
 	var envs, keys []string
+	var walkErr error
 	for _, root := range roots {
-		_ = walkLimited(root, 3000, func(path string, d fs.DirEntry) error {
+		if err := walkLimited(root, 3000, func(path string, d fs.DirEntry) error {
 			if d.IsDir() {
 				return nil
 			}
@@ -44,13 +45,19 @@ func security(ctx context.Context, c Config) []report.Finding {
 			if (name == ".env" || strings.HasSuffix(name, ".env")) && info.Mode().Perm()&0004 != 0 {
 				envs = append(envs, filepath.Base(path)+fmt.Sprintf(" mode=%#o", info.Mode().Perm()))
 			}
-			if (strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") || strings.Contains(name, "id_rsa")) && info.Mode().Perm()&0077 != 0 {
+			if privateKeyFile(name) && info.Mode().Perm()&0077 != 0 {
 				keys = append(keys, filepath.Base(path)+fmt.Sprintf(" mode=%#o", info.Mode().Perm()))
 			}
 			return nil
-		})
+		}); err != nil && walkErr == nil {
+			walkErr = err
+		}
 	}
-	out = append(out, securityFinding("security.world_readable_env", envs, "World-readable environment files can expose credentials to local users."), securityFinding("security.private_key_permissions", keys, "Private keys readable by group or other users are at risk of disclosure."))
+	if walkErr != nil && len(envs) == 0 && len(keys) == 0 {
+		out = append(out, skipped("security", "security.world_readable_env", walkErr.Error()), skipped("security", "security.private_key_permissions", walkErr.Error()))
+	} else {
+		out = append(out, securityFinding("security.world_readable_env", envs, "World-readable environment files can expose credentials to local users."), securityFinding("security.private_key_permissions", keys, "Private keys readable by group or other users are at risk of disclosure."))
+	}
 	ss := c.runner().Run(ctx, "ss", "-ltnH")
 	if ss.Err != nil {
 		out = append(out, skipped("security", "security.service_all_interfaces", commandUnavailable(ss)))
@@ -66,6 +73,21 @@ func security(ctx context.Context, c Config) []report.Finding {
 	}
 	return out
 }
+func privateKeyFile(name string) bool {
+	if strings.HasSuffix(name, ".pub") {
+		return false
+	}
+	if strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") {
+		return true
+	}
+	for _, prefix := range []string{"id_rsa", "id_dsa", "id_ecdsa", "id_ed25519"} {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func securityFinding(id string, e []string, ex string) report.Finding {
 	status, sev := report.StatusPass, report.SeverityInfo
 	if len(e) > 0 {

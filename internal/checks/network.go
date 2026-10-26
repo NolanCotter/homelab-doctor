@@ -21,10 +21,10 @@ func networking(ctx context.Context, c Config) []report.Finding {
 		var dup []string
 		for _, l := range lines {
 			f := strings.Fields(l)
-			if len(f) > 3 {
-				seen[f[3]]++
-				if seen[f[3]] == 2 {
-					dup = append(dup, f[3])
+			if len(f) > 4 {
+				seen[f[4]]++
+				if seen[f[4]] == 2 {
+					dup = append(dup, f[4])
 				}
 			}
 		}

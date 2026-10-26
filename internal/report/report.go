@@ -63,17 +63,22 @@ func (r Report) Terminal() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Homelab Doctor — %d checks\n", len(r.Findings))
 	for _, f := range r.Findings {
-		fmt.Fprintf(&b, "[%s] %-30s %-8s %s\n", strings.ToUpper(string(f.Status)), f.ID, strings.ToUpper(string(f.Severity)), strings.Join(f.Evidence, "; "))
+		fmt.Fprintf(&b, "%-9s %-35s %-8s %s\n", "["+strings.ToUpper(string(f.Status))+"]", f.ID, strings.ToUpper(string(f.Severity)), strings.Join(f.Evidence, "; "))
 	}
 	return b.String()
 }
 
-// Sanitized returns a copy suitable for display or sharing.
+// Sanitized returns a deep copy suitable for display or sharing.
 func (r Report) Sanitized(privateIPs bool) Report {
-	for i := range r.Findings {
-		r.Findings[i].Evidence = RedactLines(r.Findings[i].Evidence, privateIPs)
-		r.Findings[i].Explanation = Redact(r.Findings[i].Explanation, privateIPs)
-		r.Findings[i].Remediation = Redact(r.Findings[i].Remediation, privateIPs)
+	out := r
+	if r.Findings != nil {
+		out.Findings = make([]Finding, len(r.Findings))
 	}
-	return r
+	for i, f := range r.Findings {
+		f.Evidence = RedactLines(f.Evidence, privateIPs)
+		f.Explanation = Redact(f.Explanation, privateIPs)
+		f.Remediation = Redact(f.Remediation, privateIPs)
+		out.Findings[i] = f
+	}
+	return out
 }
